@@ -158,6 +158,9 @@ public class ResourceTests {
 
 	private void doTestResource(Resource resource) throws IOException {
 		assertThat(resource.getFilename()).isEqualTo("Resource.class");
+		System.out.println("URI = " + resource.getURI());
+		System.out.println("URL = " + resource.getURL());
+		System.out.println("File = " + resource.getURL().getFile());
 		assertThat(resource.getURL().getFile().endsWith("Resource.class")).isTrue();
 		assertThat(resource.exists()).isTrue();
 		assertThat(resource.isReadable()).isTrue();
