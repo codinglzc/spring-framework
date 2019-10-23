@@ -36,8 +36,14 @@ import org.springframework.lang.Nullable;
  */
 public class SourceFilteringListener implements GenericApplicationListener, SmartApplicationListener {
 
+	/**
+	 * 原始类
+	 */
 	private final Object source;
 
+	/**
+	 * 代理的监听器
+	 */
 	@Nullable
 	private GenericApplicationListener delegate;
 

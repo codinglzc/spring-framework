@@ -81,6 +81,9 @@ public abstract class AbstractMessageConverterMethodArgumentResolver implements 
 
 	protected final List<MediaType> allSupportedMediaTypes;
 
+	/**
+	 * RequestResponseBodyAdviceChain 对象
+	 */
 	private final RequestResponseBodyAdviceChain advice;
 
 
