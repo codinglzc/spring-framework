@@ -70,6 +70,13 @@ public final class SpringFactoriesLoader {
 
 	private static final Log logger = LogFactory.getLog(SpringFactoriesLoader.class);
 
+	/**
+	 * 缓存
+	 *
+	 * KEY1 ：ClassLoader
+	 * KEY2 ：接口的类名
+	 * VALUE ：实现的类名的数组。注意哟，是个 MultiValueMap 类
+	 */
 	private static final Map<ClassLoader, MultiValueMap<String, String>> cache = new ConcurrentReferenceHashMap<>();
 
 
@@ -91,18 +98,22 @@ public final class SpringFactoriesLoader {
 	 */
 	public static <T> List<T> loadFactories(Class<T> factoryType, @Nullable ClassLoader classLoader) {
 		Assert.notNull(factoryType, "'factoryType' must not be null");
+		// 获得 ClassLoader
 		ClassLoader classLoaderToUse = classLoader;
 		if (classLoaderToUse == null) {
 			classLoaderToUse = SpringFactoriesLoader.class.getClassLoader();
 		}
+		// 获得接口对应的实现类名们
 		List<String> factoryImplementationNames = loadFactoryNames(factoryType, classLoaderToUse);
 		if (logger.isTraceEnabled()) {
 			logger.trace("Loaded [" + factoryType.getName() + "] names: " + factoryImplementationNames);
 		}
+		// 遍历 factoryNames 数组，创建实现类的对象
 		List<T> result = new ArrayList<>(factoryImplementationNames.size());
 		for (String factoryImplementationName : factoryImplementationNames) {
 			result.add(instantiateFactory(factoryImplementationName, factoryType, classLoaderToUse));
 		}
+		// 排序
 		AnnotationAwareOrderComparator.sort(result);
 		return result;
 	}
@@ -118,32 +129,45 @@ public final class SpringFactoriesLoader {
 	 * @see #loadFactories
 	 */
 	public static List<String> loadFactoryNames(Class<?> factoryType, @Nullable ClassLoader classLoader) {
+		// 获得接口的类名
 		String factoryTypeName = factoryType.getName();
+		// 加载 FACTORIES_RESOURCE_LOCATION 配置文件，获得接口对应的实现类名们
 		return loadSpringFactories(classLoader).getOrDefault(factoryTypeName, Collections.emptyList());
 	}
 
 	private static Map<String, List<String>> loadSpringFactories(@Nullable ClassLoader classLoader) {
+		// 如果缓存中已经存在，则直接返回
 		MultiValueMap<String, String> result = cache.get(classLoader);
 		if (result != null) {
 			return result;
 		}
 
 		try {
+			// 获得 FACTORIES_RESOURCE_LOCATION 对应的 URL 们
 			Enumeration<URL> urls = (classLoader != null ?
 					classLoader.getResources(FACTORIES_RESOURCE_LOCATION) :
 					ClassLoader.getSystemResources(FACTORIES_RESOURCE_LOCATION));
+			// 创建 LinkedMultiValueMap 对象
 			result = new LinkedMultiValueMap<>();
+			// 遍历 URL 数组
 			while (urls.hasMoreElements()) {
+				// 获得 URL
 				URL url = urls.nextElement();
+				// 创建 UrlResource 对象
 				UrlResource resource = new UrlResource(url);
+				// 加载 "META-INF/spring.factories" 配置文件，成为 Properties 对象
 				Properties properties = PropertiesLoaderUtils.loadProperties(resource);
+				// 遍历 Properties 对象
 				for (Map.Entry<?, ?> entry : properties.entrySet()) {
 					String factoryTypeName = ((String) entry.getKey()).trim();
+					// 使用逗号分隔
 					for (String factoryImplementationName : StringUtils.commaDelimitedListToStringArray((String) entry.getValue())) {
+						// 添加到 result 中
 						result.add(factoryTypeName, factoryImplementationName.trim());
 					}
 				}
 			}
+			// 添加到 cache 中
 			cache.put(classLoader, result);
 			return result;
 		}
